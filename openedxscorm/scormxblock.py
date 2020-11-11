@@ -27,6 +27,9 @@ def _(text):
 
 logger = logging.getLogger(__name__)
 
+import shutil
+from django.conf import settings
+
 
 @XBlock.wants("settings")
 class ScormXBlock(XBlock, CompletableXBlockMixin):
@@ -274,6 +277,10 @@ class ScormXBlock(XBlock, CompletableXBlockMixin):
                             dest_path,
                             ContentFile(scorm_zipfile.read(zipinfo.filename)),
                         )
+        sandbox_environment = settings.IBL_AKAMAI_SANDBOX_ENV
+        if sandbox_environment is True:
+            scorm_files_directory = settings.IBL_SCORM_FILES_DIRECTORY
+            shutil.move(self.extract_folder_base_path(), scorm_files_directory)
 
     @property
     def index_page_url(self):
@@ -519,7 +526,9 @@ class ScormXBlock(XBlock, CompletableXBlockMixin):
         if not getattr(self, "_storage", None):
 
             def get_default_storage(_xblock):
-                return default_storage
+                from ibl_akamai_storage.akamai_storage import AkamaiStorage
+                return AkamaiStorage()
+                # return default_storage
 
             storage_func = self.xblock_settings.get("STORAGE_FUNC", get_default_storage)
             if isinstance(storage_func, string_types):
